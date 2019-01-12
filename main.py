@@ -479,7 +479,8 @@ class MyWin(QtWidgets.QMainWindow):
         checkbox = self.ui.checkBoxRCause.checkState()
         text = self.ui.textEdit.toPlainText().split('\n')
 
-        if visitor in self.ui.textEdit.toPlainText():
+        if f'{visitor} отсутствует по уважительной причине.' or f'{visitor} отсутствует без уважительной причины.' \
+                in self.ui.textEdit.toPlainText():
             for n, line in enumerate(text):
                 if visitor in line:
                     text.pop(n)
@@ -491,19 +492,6 @@ class MyWin(QtWidgets.QMainWindow):
             self.ui.checkBoxRCause.setCheckState(0)
         else:
             self.ui.textEdit.append(f'{visitor} отсутствует без уважительной причины.')
-
-        # N        = self.ui.comboBoxVisitors.currentIndex()
-        # checkbox = self.ui.checkBoxRCause.checkState()
-        # if checkbox == 2:
-        #     self.ui.checkBoxRCause.setCheckState(0)
-        # if idVisitors[N] in self.ui.textEdit.toPlainText():
-        #     fulltext = self.ui.textEdit.toPlainText().split('\n')
-        #     for n, x in enumerate(fulltext):
-        #         if idVisitors[N] in x:
-        #             fulltext.pop(n)
-        #     self.ui.textEdit.clear()
-        #     for x in fulltext:
-        #         self.ui.textEdit.append(x)
 
     def more_lessons(self):
         visitor = self.ui.comboBoxVisitors.currentText()
@@ -533,25 +521,27 @@ class MyWin(QtWidgets.QMainWindow):
 
     def lets_train(self):
         text = self.ui.textEdit.toPlainText().split('\n')
-        listvisitors = [i[0] for i in readdb(f'SELECT name FROM visitors '
+        list_visitors = [i[0] for i in readdb(f'SELECT name FROM visitors '
                                              f'WHERE gruppa = "{self.ui.comboBoxGroups.currentText()}"')]
         abonements = [i[0] for i in readdb(f'SELECT abonement FROM visitors '
                                            f'WHERE gruppa = "{self.ui.comboBoxGroups.currentText()}"')]
         absents = []
-        for n, i in enumerate(abonements):
-            if i == 0:
-                message = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Warning, 'Упс', f'{listvisitors[n]} не имеет '
-                                                f'больше посещений')
-                message.exec_()
+
         for line in text:
             p = line.find(' отсутствует по уважительной причине.')
             if p != -1:
                 absent = line[:p]
                 absents.append(absent)
-                i = listvisitors.index(absent)
-                listvisitors.pop(i)
+                i = list_visitors.index(absent)
+                list_visitors.pop(i)
                 abonements.pop(i)
-        d = dict(zip(listvisitors, abonements))
+        for n, i in enumerate(abonements):
+            if i == 0:
+                message = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Warning, 'Упс', f'{list_visitors[n]} не имеет '
+                                                f'больше посещений')
+                message.exec_()
+
+        d = dict(zip(list_visitors, abonements))
         for key in d:
             changedb(f'UPDATE visitors SET abonement = "{d[key] - 1}" WHERE name = "{key}"')
 
