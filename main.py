@@ -266,47 +266,43 @@ class VisitorsWindow(QtWidgets.QDialog):
         self.ui.comboBoxVisitors_2.addItems(namesvisitors)
 
     def add(self):
-        if readdb(f'SELECT quantityvisitors FROM groups WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')[0][0] < 6:
-            quantityvisitors = \
-            readdb(f'SELECT quantityvisitors FROM groups WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')[0][
-                0] + 1
-            changedb(
-                f'UPDATE groups SET quantityvisitors = {quantityvisitors} '
-                f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
+        if readdb(f'SELECT quantityvisitors FROM groups '
+                  f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')[0][0] < 6:
+            changedb(f'UPDATE groups SET quantityvisitors = quantityvisitors + 1 '
+                     f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
             idsvisitors = str(
                 readdb(f'SELECT idsvisitors FROM groups WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')[0][0])
             if self.ui.comboBoxVisitors.currentText() == 'Новый посетитель':
                 idnewvisitor = readdb(f'SELECT count(*) FROM visitors')[0][0] + 1
                 checkbutton = self.ui.radioButton.isChecked()
                 if checkbutton is True:
-                    changedb(
-                        f'INSERT INTO visitors '
-                        f'VALUES({idnewvisitor}, \'{self.ui.lineEdit.text()}\', 8, 0, \'{self.ui.comboBoxGroups.currentText()}\')')
+                    changedb(f'INSERT INTO visitors VALUES({idnewvisitor}, \'{self.ui.lineEdit.text()}\', '
+                             f'8, 0, \'{self.ui.comboBoxGroups.currentText()}\')')
                     myapp.log.append(f'Добавлен новый посетитель '
                                      f'с абонементом на 8 пссещений: {self.ui.comboBoxVisitors.currentText()}')
                 else:
-                    changedb(
-                        f'INSERT INTO visitors '
-                        f'VALUES({idnewvisitor}, \'{self.ui.lineEdit.text()}\', 16, 0, \'{self.ui.comboBoxGroups.currentText()}\')')
+                    changedb(f'INSERT INTO visitors VALUES({idnewvisitor}, \'{self.ui.lineEdit.text()}\', '
+                             f'16, 0, \'{self.ui.comboBoxGroups.currentText()}\')')
                     myapp.log.append(f'Добавлен новый посетитель '
                                      f'с абонементом на 16 пссещений: {self.ui.comboBoxVisitors.currentText()}')
                 if idsvisitors == '0':
-                    changedb(
-                        f'UPDATE groups SET idsvisitors = \'{idnewvisitor}\' '
-                        f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
+                    changedb(f'UPDATE groups SET idsvisitors = \'{idnewvisitor}\' '
+                             f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
                 else:
                     idsvisitors = idsvisitors + ', ' + str(idnewvisitor)
                     changedb(
                         f'UPDATE groups SET idsvisitors = \'{idsvisitors }\' '
                         f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
             else:
-                idvisitor = readdb(
-                    f'SELECT id FROM visitors WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')[0][0]
+                idvisitor = readdb(f'SELECT id FROM visitors '
+                                   f'WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')[0][0]
                 idsvisitors = idsvisitors + ', ' + str(idvisitor)
-                changedb(
-                    f'UPDATE visitors SET gruppa = \'{self.ui.comboBoxGroups.currentText()}\' WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')
-                changedb(
-                    f'UPDATE groups SET idsvisitors = \'{idsvisitors }\' WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
+                changedb(f'UPDATE visitors SET gruppa = \'{self.ui.comboBoxGroups.currentText()}\' '
+                         f'WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')
+                changedb(f'UPDATE groups SET idsvisitors = \'{idsvisitors }\' '
+                         f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
+
+            self.ui.lineEdit.clear()
             wgvisitors = readdb(f'SELECT * FROM visitors WHERE gruppa is NULL')  # visitors without group
             self.ui.comboBoxVisitors.clear()
             for visitor in wgvisitors:
@@ -541,8 +537,7 @@ class MyWin(QtWidgets.QMainWindow):
         idsvisitors = ','.join(idsvisitors)
         for key in d:
             changedb(f'UPDATE visitors SET abonement = "{d[key] - 1}" WHERE name = "{key}"')
-            lessons = readdb(f'SELECT lessons FROM visitors WHERE name == "{key}"')[0][0]
-            changedb(f'UPDATE visitors SET lessons = "{lessons + 1}" WHERE name = "{key}"')
+            changedb(f'UPDATE visitors SET lessons = lessons + 1 WHERE name = "{key}"')
         changedb(f'INSERT INTO lessons '
                  f'VALUES("{str(datetime.today())[:-7]}", "{self.ui.comboBoxGroups.currentText()}",'
                  f' {len(list_visitors)}, "{idsvisitors}")')
