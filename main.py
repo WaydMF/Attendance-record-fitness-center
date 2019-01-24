@@ -289,14 +289,14 @@ class VisitorsWindow(QtWidgets.QDialog):
                     changedb(f'UPDATE groups SET idsvisitors = \'{idnewvisitor}\' '
                              f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
                 else:
-                    idsvisitors = idsvisitors + ', ' + str(idnewvisitor)
+                    idsvisitors = idsvisitors + ',' + str(idnewvisitor)
                     changedb(
                         f'UPDATE groups SET idsvisitors = \'{idsvisitors }\' '
                         f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
             else:
                 idvisitor = readdb(f'SELECT id FROM visitors '
                                    f'WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')[0][0]
-                idsvisitors = idsvisitors + ', ' + str(idvisitor)
+                idsvisitors = idsvisitors + ',' + str(idvisitor)
                 changedb(f'UPDATE visitors SET gruppa = \'{self.ui.comboBoxGroups.currentText()}\' '
                          f'WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')
                 changedb(f'UPDATE groups SET idsvisitors = \'{idsvisitors }\' '
@@ -316,18 +316,22 @@ class VisitorsWindow(QtWidgets.QDialog):
             myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors.currentText()} '
                              f'добавлен в группу "{self.ui.comboBoxGroups.currentText()}"')
 
+            self.ui.comboBoxGroups.clear()
+            nfgroups = readdb(f'SELECT * FROM groups WHERE quantityvisitors < 6')
+            for group in nfgroups:
+                self.ui.comboBoxGroups.addItem(group[0])
+
     def leave_group(self):
         if self.ui.comboBoxVisitors_2.currentText() != '':
             idvisitor = readdb(f'SELECT id FROM visitors WHERE name = \'{self.ui.comboBoxVisitors_2.currentText()}\'')[0][0]
             group = readdb(f'SELECT gruppa FROM visitors WHERE name = \'{self.ui.comboBoxVisitors_2.currentText()}\'')[0][0]
-            quantityvisitors = readdb(f'SELECT quantityvisitors FROM groups WHERE name = \'{group}\'')[0][0]
             changedb(f'UPDATE visitors SET gruppa = NULL WHERE name = \'{self.ui.comboBoxVisitors_2.currentText()}\'')
-            changedb(f'UPDATE groups SET quantityvisitors = {quantityvisitors - 1} WHERE name = \'{group}\'')
+            changedb(f'UPDATE groups SET quantityvisitors = quantityvisitors - 1 WHERE name = \'{group}\'')
             idsvisitors = readdb(f'SELECT idsvisitors FROM groups WHERE name = \'{group}\'')[0][0]
             idsvisitors = idsvisitors.split(',')
             idvisitor = idsvisitors.index(str(idvisitor))
             idsvisitors.pop(idvisitor)
-            idsvisitors = ', '.join(idsvisitors)
+            idsvisitors = ','.join(idsvisitors)
             changedb(f'UPDATE groups SET idsvisitors = \'{idsvisitors}\' WHERE name = \'{group}\'')
 
             wgvisitors = readdb(f'SELECT * FROM visitors WHERE gruppa is NULL')  # visitors without group
@@ -343,23 +347,45 @@ class VisitorsWindow(QtWidgets.QDialog):
             myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors_2.currentText()} '
                              f'вышел из группы "{self.ui.comboBoxGroups_2.currentText()}"')
 
+            self.ui.comboBoxGroups.clear()
+            nfgroups = readdb(f'SELECT * FROM groups WHERE quantityvisitors < 6')
+            for group in nfgroups:
+                self.ui.comboBoxGroups.addItem(group[0])
+
     def delete_visitor(self):
         if self.ui.comboBoxVisitors_2.currentText() != '':
             idvisitor = readdb(f'SELECT id FROM visitors WHERE name = \'{self.ui.comboBoxVisitors_2.currentText()}\'')[0][0]
             group = readdb(f'SELECT gruppa FROM visitors WHERE name = \'{self.ui.comboBoxVisitors_2.currentText()}\'')[0][0]
-            quantityvisitors = readdb(f'SELECT quantityvisitors FROM groups WHERE name = \'{group}\'')[0][0]
             changedb(f'DELETE FROM visitors WHERE name = \'{self.ui.comboBoxVisitors_2.currentText()}\'')
-            changedb(f'UPDATE groups SET quantityvisitors = {quantityvisitors -1} WHERE name = \'{group}\'')
+            changedb(f'UPDATE groups SET quantityvisitors = quantityvisitors -1 WHERE name = \'{group}\'')
             idsvisitors = readdb(f'SELECT idsvisitors FROM groups WHERE name = \'{group}\'')[0][0]
             idsvisitors = idsvisitors.split(',')
             idvisitor = idsvisitors.index(str(idvisitor))
             idsvisitors.pop(idvisitor)
-            idsvisitors = ', '.join(idsvisitors)
+            idsvisitors = ','.join(idsvisitors)
             changedb(f'UPDATE groups SET idsvisitors = \'{idsvisitors}\' WHERE name = \'{group}\'')
             myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors.currentText()} '
                              f'вышел из группы "{group}"')
             myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors.currentText()} '
                              f'удален их системы')
+
+            wgvisitors = readdb(f'SELECT * FROM visitors WHERE gruppa is NULL')  # visitors without group
+            self.ui.comboBoxVisitors.clear()
+            for visitor in wgvisitors:
+                self.ui.comboBoxVisitors.addItem(visitor[1])
+            self.ui.comboBoxVisitors.addItem('Новый посетитель')
+            self.ui.comboBoxGroups_2.clear()
+            groups1 = readdb(f'SELECT name FROM groups WHERE quantityvisitors > 0')  # groups with >=1 people
+            for group in groups1:
+                self.ui.comboBoxGroups_2.addItem(group[0])
+            self.ui.comboBoxVisitors_2.clear()
+            myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors_2.currentText()} '
+                             f'вышел из группы "{self.ui.comboBoxGroups_2.currentText()}"')
+
+            self.ui.comboBoxGroups.clear()
+            nfgroups = readdb(f'SELECT * FROM groups WHERE quantityvisitors < 6')
+            for group in nfgroups:
+                self.ui.comboBoxGroups.addItem(group[0])
 
     def back(self):
         self.close()
