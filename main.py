@@ -1,5 +1,4 @@
 import sys
-import os
 import sqlite3
 from datetime import *
 # Импортируем наш интерфейс
@@ -25,26 +24,6 @@ def changedb(request=None):
     cursor = conn.cursor()
     cursor.execute(f'{request}')
     conn.commit()
-
-# cursor.execute(f'pragma table_info(groups)')
-# columns_description = cursor.fetchall()
-# print(columns_description)
-# print([column[1] for column in columns_description])
-
-# cursor.execute('SELECT name FROM visitors')
-# namesVisitors = list(map(lambda x: x[0], cursor.fetchall()))
-# cursor.execute('SELECT gruppa FROM visitors')
-# groupVisitors = list(map(lambda x: x[0], cursor.fetchall()))
-# print(idVisitors, namesVisitors, groupVisitors)
-
-# idVisitorsWG = []
-# cursor.execute('SELECT * FROM visitors')
-# for i in cursor.fetchall():
-#     if i[4] is None:
-#         idVisitorsWG.append(i)
-# # g = list(map(lambda x: x[4], cursor.fetchall()))
-# g = cursor.fetchall()
-# print('\n', idVisitorsWG)
 
 
 class AuthorizationWindow(QtWidgets.QDialog):
@@ -191,7 +170,7 @@ class GroupsWindow(QtWidgets.QDialog):
                                             'Название группы может содержать только буквы\n'
                                             '         и должно состоять из одного слова')
             message.exec_()
-        myapp.log.append(f'Добавлена новая группа: "{self.ui.lineEdit.text()}"')
+        myapp.log.append(f'Добавлена новая группа: {self.ui.lineEdit.text()}')
 
     def delete(self):
         group = self.ui.comboBoxGroups.currentText()
@@ -202,7 +181,7 @@ class GroupsWindow(QtWidgets.QDialog):
         self.ui.comboBoxGroups.addItems(myapp.groups)
         myapp.ui.comboBoxGroups.clear()
         myapp.ui.comboBoxGroups.addItems(myapp.groups)
-        myapp.log.append(f'Удалена группа: "{group}"')
+        myapp.log.append(f'Удалена группа: {group}')
 
     def back(self):
         self.close()
@@ -278,13 +257,13 @@ class VisitorsWindow(QtWidgets.QDialog):
                 if checkbutton is True:
                     changedb(f'INSERT INTO visitors VALUES({idnewvisitor}, \'{self.ui.lineEdit.text()}\', '
                              f'8, 0, \'{self.ui.comboBoxGroups.currentText()}\')')
-                    myapp.log.append(f'Добавлен новый посетитель '
-                                     f'с абонементом на 8 пссещений: {self.ui.comboBoxVisitors.currentText()}')
+                    myapp.log.append(f'В группу {self.ui.comboBoxGroups.currentText()} добавлен новый посетитель '
+                                     f'с абонементом на 8 посещений: {self.ui.lineEdit.text()}')
                 else:
                     changedb(f'INSERT INTO visitors VALUES({idnewvisitor}, \'{self.ui.lineEdit.text()}\', '
-                             f'16, 0, \'{self.ui.comboBoxGroups.currentText()}\')')
-                    myapp.log.append(f'Добавлен новый посетитель '
-                                     f'с абонементом на 16 пссещений: {self.ui.comboBoxVisitors.currentText()}')
+                             f'16, 0, \'{self.ui.comboBoxGroups.currentText().currentText()}\')')
+                    myapp.log.append(f'В группу {self.ui.comboBoxGroups} добавлен новый посетитель '
+                                     f'с абонементом на 16 посещений: {self.ui.lineEdit.text()}')
                 if idsvisitors == '0':
                     changedb(f'UPDATE groups SET idsvisitors = \'{idnewvisitor}\' '
                              f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
@@ -293,6 +272,9 @@ class VisitorsWindow(QtWidgets.QDialog):
                     changedb(
                         f'UPDATE groups SET idsvisitors = \'{idsvisitors }\' '
                         f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
+                self.ui.lineEdit.hide()
+                self.ui.radioButton.hide()
+                self.ui.radioButton_2.hide()
             else:
                 idvisitor = readdb(f'SELECT id FROM visitors '
                                    f'WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')[0][0]
@@ -301,6 +283,8 @@ class VisitorsWindow(QtWidgets.QDialog):
                          f'WHERE name = \'{self.ui.comboBoxVisitors.currentText()}\'')
                 changedb(f'UPDATE groups SET idsvisitors = \'{idsvisitors }\' '
                          f'WHERE name = \'{self.ui.comboBoxGroups.currentText()}\'')
+                myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors.currentText()} '
+                                 f'добавлен в группу "{self.ui.comboBoxGroups.currentText()}"')
 
             self.ui.lineEdit.clear()
             wgvisitors = readdb(f'SELECT * FROM visitors WHERE gruppa is NULL')  # visitors without group
@@ -313,8 +297,6 @@ class VisitorsWindow(QtWidgets.QDialog):
             for group in groups1:
                 self.ui.comboBoxGroups_2.addItem(group[0])
             self.ui.comboBoxVisitors_2.clear()
-            myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors.currentText()} '
-                             f'добавлен в группу "{self.ui.comboBoxGroups.currentText()}"')
 
             self.ui.comboBoxGroups.clear()
             nfgroups = readdb(f'SELECT * FROM groups WHERE quantityvisitors < 6')
@@ -343,9 +325,9 @@ class VisitorsWindow(QtWidgets.QDialog):
             groups1 = readdb(f'SELECT name FROM groups WHERE quantityvisitors > 0')  # groups with >=1 people
             for group in groups1:
                 self.ui.comboBoxGroups_2.addItem(group[0])
-            self.ui.comboBoxVisitors_2.clear()
             myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors_2.currentText()} '
                              f'вышел из группы "{self.ui.comboBoxGroups_2.currentText()}"')
+            self.ui.comboBoxVisitors_2.clear()
 
             self.ui.comboBoxGroups.clear()
             nfgroups = readdb(f'SELECT * FROM groups WHERE quantityvisitors < 6')
@@ -364,9 +346,9 @@ class VisitorsWindow(QtWidgets.QDialog):
             idsvisitors.pop(idvisitor)
             idsvisitors = ','.join(idsvisitors)
             changedb(f'UPDATE groups SET idsvisitors = \'{idsvisitors}\' WHERE name = \'{group}\'')
-            myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors.currentText()} '
+            myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors_2.currentText()} '
                              f'вышел из группы "{group}"')
-            myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors.currentText()} '
+            myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors_2.currentText()} '
                              f'удален их системы')
 
             wgvisitors = readdb(f'SELECT * FROM visitors WHERE gruppa is NULL')  # visitors without group
@@ -379,8 +361,6 @@ class VisitorsWindow(QtWidgets.QDialog):
             for group in groups1:
                 self.ui.comboBoxGroups_2.addItem(group[0])
             self.ui.comboBoxVisitors_2.clear()
-            myapp.log.append(f'Посетитель {self.ui.comboBoxVisitors_2.currentText()} '
-                             f'вышел из группы "{self.ui.comboBoxGroups_2.currentText()}"')
 
             self.ui.comboBoxGroups.clear()
             nfgroups = readdb(f'SELECT * FROM groups WHERE quantityvisitors < 6')
@@ -567,27 +547,8 @@ class MyWin(QtWidgets.QMainWindow):
         changedb(f'INSERT INTO lessons '
                  f'VALUES("{str(datetime.today())[:-7]}", "{self.ui.comboBoxGroups.currentText()}",'
                  f' {len(list_visitors)}, "{idsvisitors}")')
-
-        self.log.append(f'Проведено занятие с группой "{self.ui.comboBoxGroups.currentText()}"')
-        print(self.log[-1])
-        # fulltext = self.ui.textEdit.toPlainText().split('\n')
-        # if fulltext[0] == '':
-        #     message = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Warning,'Ошибка','Выберите идентификаторы посетителей занятия')
-        #     message.exec_()
-        #     return
-        # for line in fulltext:
-        #     N = int(line[:3])
-        #     visitor = Visitors(N)
-        #     if int(visitor.Lessons) < 1:
-        #         message = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Warning,'Ошибка','У одного или более посетителей тренировка не оплачена',buttons = QtWidgets.QMessageBox.Ok)
-        #         message.exec_()
-        #         return
-        # for n, line in enumerate(fulltext):
-        #     N = int(line[:3])
-        #     visitor = Visitors(N)
-        #     fulltext[n] = visitor.Train()
-        # self.ui.textEdit.setPlainText('\n'.join(fulltext))
-        # SaveFile(self.path)
+        self.log.append(f'Проведено занятие с группой "{self.ui.comboBoxGroups.currentText()}. "'
+                        f'Отсутствовали: {",".join(absents)}')
 
 
 if __name__ == "__main__":
